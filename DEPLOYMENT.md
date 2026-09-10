@@ -42,3 +42,27 @@ same pipeline as the local run above, just automated.
 3. Codespaces detects the forwarded port 8080 (declared in `devcontainer.json` `forwardPorts`) and opens it automatically (`onAutoForward: openBrowser`); otherwise open it manually from the **Ports** tab.
 4. To re-run after the container is already up (e.g. after editing `site/index.html`): `bash scripts/codespaces-deploy.sh`.
 5. To share the URL outside your own GitHub session: `gh codespace ports visibility 8080:public -c $CODESPACE_NAME`.
+
+### What actually happened creating this Codespace (two build issues found and fixed)
+
+1. First Codespace create (`gh codespace create -R rifaterdemsahin/ToonVsJsononKubernetes`) failed
+   its devcontainer build: the `docker-in-docker` feature defaults to installing the **Moby**
+   engine packages, which aren't published for the `mcr.microsoft.com/devcontainers/base:ubuntu`
+   tag's resolved release. The container fell back to a bare recovery container with no
+   docker/kubectl/minikube installed at all. Fix: pinned the base image to
+   `ubuntu-24.04` and set the feature option `"moby": false` (installs `docker-ce` instead) in
+   [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json).
+2. After recreating the Codespace, `gh codespace ssh`/`gh codespace logs` kept failing with
+   "failed to start SSH server" even though the container was actually up — that turned out to be
+   a `gh` CLI quirk, not a broken container. Opened the Codespace directly in the browser
+   (`https://<codespace-name>.github.dev`) instead, which connected fine once the folder-trust
+   prompt was accepted.
+3. Inside the Codespace, `docker build` failed pulling `moby/buildkit:buildx-stable-1` (`404 page
+   not found`) — BuildKit's `buildx` builder can't reach that image through this nested
+   docker-in-docker setup. Fix: build with `DOCKER_BUILDKIT=0` to use the legacy builder instead,
+   applied both as a one-off and in [scripts/codespaces-deploy.sh](scripts/codespaces-deploy.sh)
+   so future Codespaces don't hit the same wall.
+4. After that, `kubectl apply` + `kubectl rollout status` succeeded, `kubectl port-forward
+   --address 0.0.0.0 svc/toon-vs-json 8080:80` was started in the background, Codespaces
+   auto-detected port 8080 and forwarded it to
+   `https://<codespace-name>-8080.app.github.dev/`, which rendered the page correctly.

@@ -12,7 +12,9 @@ minikube start --driver=docker --force
 
 echo "==> Building the image inside minikube's docker daemon"
 eval "$(minikube docker-env)"
-docker build -t toon-vs-json:latest .
+# BuildKit's buildx builder can't pull moby/buildkit inside this nested
+# docker-in-docker setup (fails with a 404), so use the legacy builder.
+DOCKER_BUILDKIT=0 docker build -t toon-vs-json:latest .
 
 echo "==> Applying Kubernetes manifests"
 kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
