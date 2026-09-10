@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toon-vs-json
+  labels:
+    app: toon-vs-json
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: toon-vs-json
+  template:
+    metadata:
+      labels:
+        app: toon-vs-json
+    spec:
+      containers:
+        - name: web
+          image: toon-vs-json:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi

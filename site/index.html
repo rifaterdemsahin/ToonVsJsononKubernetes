@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TOON vs JSON</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131826; --panel2:#0f1420; --border:#232b3d;
+    --text:#e7ecf5; --muted:#8b95ac; --accent:#5ee6b0; --accent2:#7aa2ff;
+    --bad:#ff8080; --good:#5ee6b0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);padding-block:48px}
+  .wrap{max-width:1040px;margin:0 auto;padding-inline:20px}
+  header{text-align:center;margin-bottom:40px}
+  h1{font-size:clamp(28px,5vw,44px);margin:0 0 8px;letter-spacing:-0.02em}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);font-size:16px;max-width:640px;margin:0 auto}
+  .badge{display:inline-block;background:var(--panel);border:1px solid var(--border);color:var(--accent2);
+    border-radius:999px;padding:4px 12px;font-size:12px;margin-bottom:16px}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:32px 0}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center}
+  .stat .num{font-size:32px;font-weight:700;color:var(--accent)}
+  .stat .label{color:var(--muted);font-size:13px;margin-top:4px}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+  @media (max-width:720px){.cols{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .card h3{margin:0;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;
+    display:flex;justify-content:space-between;align-items:center}
+  .json h3{color:var(--bad)}
+  .toon h3{color:var(--good)}
+  .tokcount{font-size:12px;color:var(--muted);font-weight:400}
+  pre{margin:0;padding:18px;overflow-x:auto;font-size:13px;line-height:1.55;background:var(--panel2)}
+  code{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+
+  section{margin:48px 0}
+  h2{font-size:22px;margin-bottom:6px}
+  .lede{color:var(--muted);margin-bottom:20px;font-size:14px}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+  th,td{text-align:left;padding:12px 16px;font-size:14px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  .yes{color:var(--good)}
+  .no{color:var(--bad)}
+
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .tile{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .tile h4{margin:0 0 8px;font-size:15px;color:var(--accent2)}
+  .tile p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:56px}
+  code.inline{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:2px 6px}
+
+  .env{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin-top:20px}
+  .env .row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--border)}
+  .env .row:last-child{border-bottom:none}
+  .env .row span:first-child{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">served from Kubernetes (minikube)</span>
+    <h1>TOON <span>vs</span> JSON</h1>
+    <p class="sub">Token-Oriented Object Notation is a compact, line-based serialization
+      built for feeding structured data to LLMs cheaply — same information, far fewer tokens.</p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section>
+    <h2>Same data, two formats</h2>
+    <p class="lede">A list of 4 users — identical information, rendered as JSON and as TOON.</p>
+    <div class="cols">
+      <div class="card json">
+        <h3>JSON <span class="tokcount" id="jsonTok"></span></h3>
+        <pre><code id="jsonBlock"></code></pre>
+      </div>
+      <div class="card toon">
+        <h3>TOON <span class="tokcount" id="toonTok"></span></h3>
+        <pre><code id="toonBlock"></code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Why TOON wins for LLM payloads</h2>
+    <div class="grid3">
+      <div class="tile">
+        <h4>No repeated keys</h4>
+        <p>JSON repeats every field name for every object. TOON declares the field header once per array, then streams rows — like CSV with types.</p>
+      </div>
+      <div class="tile">
+        <h4>Fewer structural tokens</h4>
+        <p>No <code class="inline">{ } [ ] "</code> spam per field. Braces, quotes, and commas are the tokens that don't carry information — TOON strips them.</p>
+      </div>
+      <div class="tile">
+        <h4>Explicit array length</h4>
+        <p>TOON headers declare row count and columns up front (<code class="inline">users[4]{id,name,role}</code>), so the model — and validators — know the shape before reading data.</p>
+      </div>
+      <div class="tile">
+        <h4>Cheaper at scale</h4>
+        <p>Savings compound with array size: a 100-row JSON table pays the key tax 100 times. TOON pays it once.</p>
+      </div>
+      <div class="tile">
+        <h4>Still typed</h4>
+        <p>Unlike YAML-only savings, TOON keeps JSON's scalar types (numbers, booleans, strings) — no ambiguity for the model to guess at.</p>
+      </div>
+      <div class="tile">
+        <h4>Lossless round-trip</h4>
+        <p>TOON encodes/decodes back to the exact same JSON object — it's a transport optimization, not a data model change.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Head to head</h2>
+    <table>
+      <thead><tr><th>Property</th><th>JSON</th><th>TOON</th></tr></thead>
+      <tbody>
+        <tr><td>Human readable</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Universally parseable</td><td class="yes">Yes (native everywhere)</td><td class="no">Needs a TOON decoder</td></tr>
+        <tr><td>Token efficiency (arrays of objects)</td><td class="no">Baseline</td><td class="yes">~30&ndash;60% fewer tokens</td></tr>
+        <tr><td>Repeated key overhead</td><td class="no">Per object</td><td class="yes">Once per array</td></tr>
+        <tr><td>Best use case</td><td>APIs, storage, config</td><td>LLM prompt/context payloads</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>This page's environment</h2>
+    <p class="lede">Rendered entirely client-side and served by nginx from a pod running in your local minikube cluster.</p>
+    <div class="env" id="env"></div>
+  </section>
+
+  <footer>Static demo &mdash; deployed via Docker + Kubernetes (minikube). No backend calls.</footer>
+</div>
+
+<script>
+const users = [
+  {id:1,name:"Ada Lovelace",role:"admin"},
+  {id:2,name:"Alan Turing",role:"engineer"},
+  {id:3,name:"Grace Hopper",role:"engineer"},
+  {id:4,name:"Margaret Hamilton",role:"admin"}
+];
+
+const jsonStr = JSON.stringify({users}, null, 2);
+
+function toToon(rows){
+  const cols = Object.keys(rows[0]);
+  const header = `users[${rows.length}]{${cols.join(',')}}:`;
+  const lines = rows.map(r => "  " + cols.map(c => {
+    const v = r[c];
+    return typeof v === "string" && v.includes(" ") ? v : v;
+  }).join(","));
+  return [header, ...lines].join("\n");
+}
+const toonStr = toToon(users);
+
+document.getElementById('jsonBlock').textContent = jsonStr;
+document.getElementById('toonBlock').textContent = toonStr;
+
+// rough token estimate: ~4 chars/token, good enough for a visual comparison
+function estTokens(s){ return Math.ceil(s.length / 4); }
+const jt = estTokens(jsonStr), tt = estTokens(toonStr);
+document.getElementById('jsonTok').textContent = `~${jt} tokens`;
+document.getElementById('toonTok').textContent = `~${tt} tokens`;
+
+const savingsPct = Math.round((1 - tt/jt) * 100);
+document.getElementById('stats').innerHTML = `
+  <div class="stat"><div class="num">${jsonStr.length}</div><div class="label">JSON characters</div></div>
+  <div class="stat"><div class="num">${toonStr.length}</div><div class="label">TOON characters</div></div>
+  <div class="stat"><div class="num">${savingsPct}%</div><div class="label">fewer chars in TOON</div></div>
+  <div class="stat"><div class="num">${users.length}</div><div class="label">rows compared</div></div>
+`;
+
+document.getElementById('env').innerHTML = `
+  <div class="row"><span>Hostname</span><span>${location.hostname}</span></div>
+  <div class="row"><span>Served over</span><span>${location.protocol.replace(':','')}</span></div>
+  <div class="row"><span>Rendered at</span><span>${new Date().toLocaleString()}</span></div>
+`;
+</script>
+</body>
+</html>
