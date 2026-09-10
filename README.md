@@ -18,6 +18,20 @@ your own machine or inside a **GitHub Codespace**.
 - Open a Codespace for this repo: https://github.com/codespaces/new?repo=rifaterdemsahin/ToonVsJsononKubernetes
 - Create/list Codespaces from the CLI: `gh codespace create -R rifaterdemsahin/ToonVsJsononKubernetes`
 
+### Live example from this session (`glowing-space-goggles-p9wx456xvwfrp79`)
+
+- Codespace web IDE: https://glowing-space-goggles-p9wx456xvwfrp79.github.dev
+- Forwarded demo page (port 8080 → the minikube Service): https://glowing-space-goggles-p9wx456xvwfrp79-8080.app.github.dev/
+
+**These URLs are not stable — don't bookmark them as *the* link to this project.** Every
+Codespace gets a randomly generated name (`glowing-space-goggles-p9wx456xvwfrp79` here), and
+that name is baked into both the `*.github.dev` IDE URL and the `*-<port>.app.github.dev`
+forwarded-port URL. A Codespace is an immutable, disposable VM: stop or delete it and the name
+is gone for good; create a new one (even from the same repo/branch) and you get a different name
+and therefore different URLs. The two links above will work only while this specific Codespace
+exists and is running — use the **Open a Codespace for this repo** link above to create your own
+current one instead.
+
 ## How to start and see it
 
 ### Option A — GitHub Codespaces (no local setup)
